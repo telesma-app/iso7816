@@ -1,9 +1,9 @@
-# go-ctap/iso7816
+# telesma-app/iso7816
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/telesma-app/iso7816.svg)](https://pkg.go.dev/github.com/telesma-app/iso7816)
 [![Go](https://github.com/telesma-app/iso7816/actions/workflows/go.yml/badge.svg)](https://github.com/telesma-app/iso7816/actions/workflows/go.yml)
 
-`go-ctap/iso7816` is a transport-independent Go library for ISO/IEC 7816-4
+`telesma-app/iso7816` is a transport-independent Go library for ISO/IEC 7816-4
 command and response APDUs.
 
 > [!WARNING]
@@ -34,7 +34,7 @@ See [`go.mod`](go.mod) for the required Go version.
 ## Quick start
 
 `Card` is the contextual raw-APDU interface implemented by
-[`go-ctap/pcsc`](https://github.com/telesma-app/pcsc):
+[`telesma-app/pcsc`](https://github.com/telesma-app/pcsc):
 
 ```go
 type Card interface {
@@ -154,8 +154,8 @@ This package does not provide:
 - BER-TLV data models;
 - secure messaging, PIN workflows, or key management.
 
-Use [`go-ctap/pcsc`](https://github.com/telesma-app/pcsc) for PC/SC access and
-[`go-ctap/ctap`](https://github.com/telesma-app/ctap) for FIDO2 commands.
+Use [`telesma-app/pcsc`](https://github.com/telesma-app/pcsc) for PC/SC access and
+[`telesma-app/ctap`](https://github.com/telesma-app/ctap) for FIDO2 commands.
 
 ## Testing
 
