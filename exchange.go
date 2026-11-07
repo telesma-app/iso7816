@@ -53,7 +53,7 @@ func newExchangeOptions(opts ...ExchangeOption) exchangeOptions {
 	return options
 }
 
-// ExchangeOption configures response collection for Exchange.
+// ExchangeOption configures response collection for Exchange and ExchangeChain.
 type ExchangeOption func(*exchangeOptions)
 
 // WithMaxResponseSize limits the combined response data size. The default is
@@ -64,8 +64,9 @@ func WithMaxResponseSize(size int) ExchangeOption {
 	}
 }
 
-// WithMoreDataStatusBytes sets the SW1 values which cause Exchange to issue
-// GET RESPONSE. ISO 7816 defines 0x61; some cards use 0x9f.
+// WithMoreDataStatusBytes sets the SW1 values which cause Exchange or the final
+// command of ExchangeChain to issue GET RESPONSE. ISO 7816 defines 0x61; some
+// cards use 0x9f.
 func WithMoreDataStatusBytes(sw1 ...byte) ExchangeOption {
 	return func(options *exchangeOptions) {
 		options.moreDataSW1 = slices.Clone(sw1)
@@ -81,19 +82,60 @@ func Exchange(
 	opts ...ExchangeOption,
 ) (Response, error) {
 	options := newExchangeOptions(opts...)
+	if err := options.validate(); err != nil {
+		return Response{}, err
+	}
+
+	return exchangeCommand(ctx, card, command, options)
+}
+
+// ExchangeChain sends a nonempty prepared command chain, such as the result of
+// Chain. Every intermediate response must have status 0x9000 and no data; an
+// intermediate rejection returns an APDUError and stops the chain. The final
+// command collects GET RESPONSE data and returns its final status uninterpreted.
+// The caller serializes access to card and manages its lifetime after errors.
+func ExchangeChain(
+	ctx context.Context,
+	card Card,
+	commands []Command,
+	opts ...ExchangeOption,
+) (Response, error) {
+	options := newExchangeOptions(opts...)
+	if err := options.validate(); err != nil {
+		return Response{}, err
+	}
+
+	for _, command := range commands[:len(commands)-1] {
+		response, err := Transmit(ctx, card, command)
+		if err != nil {
+			return Response{}, err
+		}
+		if err := response.APDUError(); err != nil {
+			return Response{}, err
+		}
+		if len(response.Data) != 0 {
+			return Response{}, ErrInvalidResponse
+		}
+	}
+
+	return exchangeCommand(ctx, card, commands[len(commands)-1], options)
+}
+
+func (options exchangeOptions) validate() error {
 	if options.maxResponseSize < 0 {
-		return Response{}, fmt.Errorf(
+		return fmt.Errorf(
 			"%w: maximum response size %d",
 			ErrInvalidOption,
 			options.maxResponseSize,
 		)
 	}
+
 	if len(options.moreDataSW1) == 0 {
-		return Response{}, fmt.Errorf("%w: empty more-data status list", ErrInvalidOption)
+		return fmt.Errorf("%w: empty more-data status list", ErrInvalidOption)
 	}
 	for _, sw1 := range options.moreDataSW1 {
 		if sw1 != 0x61 && sw1 != 0x9f {
-			return Response{}, fmt.Errorf(
+			return fmt.Errorf(
 				"%w: unsupported more-data SW1 0x%02x",
 				ErrInvalidOption,
 				sw1,
@@ -101,6 +143,10 @@ func Exchange(
 		}
 	}
 
+	return nil
+}
+
+func exchangeCommand(ctx context.Context, card Card, command Command, options exchangeOptions) (Response, error) {
 	response, err := Transmit(ctx, card, command)
 	if err != nil {
 		return Response{}, err

@@ -107,24 +107,35 @@ commands, err := iso7816.Chain(command, 240)
 if err != nil {
     log.Fatal(err)
 }
-for _, command := range commands {
-    response, err := iso7816.Transmit(ctx, card, command)
-    // Check every intermediate response before sending the next fragment.
+response, err := iso7816.ExchangeChain(ctx, card, commands)
+if err != nil {
+    log.Fatal(err)
+}
+if err := response.APDUError(); err != nil {
+    log.Fatal(err)
 }
 ```
 
 Application protocols may need to modify fields on individual fragments.
-`Chain` only applies ISO 7816 framing rules and does not transmit them
-automatically.
+`Chain` only applies ISO 7816 framing rules. Pass its nonempty result to
+`ExchangeChain` after any application-specific fragment changes.
+
+`ExchangeChain` requires every intermediate response to contain no data and
+status `0x9000`. Any intermediate rejection returns `*APDUError` and stops the
+chain; `0x61xx`, `0x9fxx`, and application-specific statuses do not trigger
+polling at this stage. The last command uses the same response collection and
+options as `Exchange`, returning its final status without interpreting it.
 
 ## Cancellation and concurrency
 
 Context cancellation is passed to the underlying `Card`. A canceled APDU is
 not retried: the card or reader may already have processed it.
 
-`Exchange` performs several APDUs when it receives a chained response. The
-caller must prevent another application or goroutine from interleaving APDUs,
-for example by using an exclusive PC/SC connection or transaction.
+`Exchange` and `ExchangeChain` can perform several APDUs. The caller must prevent
+another application or goroutine from interleaving APDUs, for example by using
+an exclusive PC/SC connection or transaction. Both functions borrow the card;
+the caller manages its lifetime and decides whether an interrupted exchange
+requires a reset or a new connection.
 
 ## Errors
 
