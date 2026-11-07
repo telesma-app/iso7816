@@ -163,10 +163,10 @@ Underlying card errors are returned unchanged.
 
 ## SCP11b secure channels
 
-`github.com/telesma-app/iso7816/scp11` implements the P-256/AES-128 SCP11b profile
-used by the Yubico and TOKEN2 PIV tools. It does not implement SCP11a, SCP11c, other
-cryptographic profiles, or the distinct NIST SP 800-73 PIV secure messaging
-suites `27`/`2E`. The selected card application must support this profile.
+`github.com/telesma-app/iso7816/scp11` implements the P-256/AES-128 GlobalPlatform
+SCP11b profile. It does not implement SCP11a, SCP11c, other cryptographic profiles,
+or the distinct NIST SP 800-73 PIV secure messaging suites `27`/`2E`. The selected
+card application must support this profile.
 
 Select the intended application before opening a channel. Supply a previously
 trusted static P-256 card key and explicit key reference and APDU encoding:
@@ -215,15 +215,6 @@ channel state invalidate and close the connection and clear session keys.
 `Close` releases waiting callers without waiting for the active exchange gate.
 There is no plaintext fallback, automatic reconnect, or replay. Application
 `SELECT` and manual `GET RESPONSE` are unsupported within an established channel.
-
-Hardware interoperability was checked over USB CCID on macOS with a YubiKey 5C
-Nano running firmware 5.7.4. Short and extended APDU encodings passed authenticated
-Discovery and populated certificate reads, including multi-part encrypted
-responses. The tested TOKEN2 R3.4 returned `6A82` for GlobalPlatform Security
-Domain selection and `6D00` for SCP11b INTERNAL AUTHENTICATE in both short and
-extended encodings; changing the encoding did not establish a channel. These
-results apply to the tested devices. Outgoing protected command chaining, NFC,
-PIN verification, and signing have not been checked on hardware.
 
 ## Scope
 

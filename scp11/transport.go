@@ -25,8 +25,7 @@ var ErrAuthentication = errors.New("scp11: receipt authentication failed")
 // is not trusted merely because ReadCertificates returned it.
 //
 // Encoding must explicitly select EncodingShort (with command chaining) or
-// EncodingExtended. There is no automatic fallback. The factory reference used
-// by TOKEN2 and Yubico PIV tools is KeyID 13, KeyVersion 01 (hexadecimal).
+// EncodingExtended. There is no automatic fallback.
 type Parameters struct {
 	KeyID      byte
 	KeyVersion byte

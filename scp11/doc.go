@@ -1,8 +1,8 @@
 // Package scp11 establishes GlobalPlatform SCP11b channels over complete ISO 7816
 // APDU exchanges, independently of the connection backend and card application.
-// It implements the P-256 and AES-128 profile used by the Yubico and TOKEN2 PIV
-// tools, with encrypted commands and responses and eight-byte command and
-// response MACs. The selected card application must support this profile.
+// It implements P-256 key agreement and AES-128, with encrypted commands and
+// responses and eight-byte command and response MACs. The selected card
+// application must support this profile.
 // It does not implement SCP11a, SCP11c, other cipher suites, or the NIST SP 800-73
 // secure messaging cipher suites 27 and 2E.
 //
