@@ -29,3 +29,18 @@ func (e *APDUError) Error() string {
 func (e *APDUError) StatusWord() StatusWord {
 	return NewStatusWord(e.SW1, e.SW2)
 }
+
+// DeviceInvalidatedError marks a connection that must not be reused. Owned
+// transports close it before returning; borrowed-card callers must close it.
+// It preserves the underlying cause, including an interrupted APDU exchange.
+type DeviceInvalidatedError struct {
+	Err error
+}
+
+func (e *DeviceInvalidatedError) Error() string {
+	return e.Err.Error()
+}
+
+func (e *DeviceInvalidatedError) Unwrap() error {
+	return e.Err
+}
