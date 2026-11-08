@@ -10,8 +10,8 @@ import (
 	"io"
 	"sync"
 
+	"github.com/telesma-app/bertlv"
 	"github.com/telesma-app/iso7816"
-	"github.com/telesma-app/iso7816/internal/bertlv"
 	channelcrypto "github.com/telesma-app/iso7816/internal/scp11"
 )
 

@@ -21,13 +21,14 @@ The package supports:
 - response and command size validation;
 - contextual raw-card connections such as `pcsc.Card`.
 
-The package has no platform-specific code and no runtime dependencies.
+The root package has no platform-specific code and no runtime dependencies.
 
 The optional `scp11` subpackage establishes GlobalPlatform SCP11b channels
 over complete APDU transports. It uses P-256 key agreement, AES-128 encryption,
 and command and response MACs. It is independent of PC/SC and the selected
 smart-card application. See [SCP11b](#scp11b-secure-channels) for its transport
-and ownership contracts.
+and ownership contracts. The subpackage uses `github.com/telesma-app/bertlv`
+for BER-TLV encoding and parsing.
 
 ## Installation
 

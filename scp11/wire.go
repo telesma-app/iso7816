@@ -4,8 +4,8 @@ import (
 	"crypto/ecdh"
 	"fmt"
 
+	"github.com/telesma-app/bertlv"
 	"github.com/telesma-app/iso7816"
-	"github.com/telesma-app/iso7816/internal/bertlv"
 )
 
 // internalAuthenticateCommand constructs GlobalPlatform SCP11b INTERNAL
