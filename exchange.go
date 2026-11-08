@@ -40,6 +40,7 @@ func Transmit(ctx context.Context, card Card, command Command) (Response, error)
 type exchangeOptions struct {
 	maxResponseSize int
 	moreDataSW1     []byte
+	getResponseCLA  *byte
 }
 
 func newExchangeOptions(opts ...ExchangeOption) exchangeOptions {
@@ -70,6 +71,15 @@ func WithMaxResponseSize(size int) ExchangeOption {
 func WithMoreDataStatusBytes(sw1 ...byte) ExchangeOption {
 	return func(options *exchangeOptions) {
 		options.moreDataSW1 = slices.Clone(sw1)
+	}
+}
+
+// WithGetResponseCLA sets the class byte of automatically generated GET RESPONSE
+// commands. By default, they inherit the original command's CLA with the command
+// chaining bit cleared. The original command and prepared chain are unchanged.
+func WithGetResponseCLA(cla byte) ExchangeOption {
+	return func(options *exchangeOptions) {
+		options.getResponseCLA = &cla
 	}
 }
 
@@ -155,6 +165,11 @@ func exchangeCommand(ctx context.Context, card Card, command Command, options ex
 		return Response{}, ErrResponseTooLarge
 	}
 
+	getResponseCLA := command.CLA &^ CommandChainingBit
+	if options.getResponseCLA != nil {
+		getResponseCLA = *options.getResponseCLA
+	}
+
 	data := response.Data
 	for slices.Contains(options.moreDataSW1, response.Status.SW1()) {
 		length, ok := response.Status.MoreDataLength()
@@ -170,7 +185,7 @@ func exchangeCommand(ctx context.Context, card Card, command Command, options ex
 		}
 
 		response, err = Transmit(ctx, card, Command{
-			CLA:      command.CLA &^ CommandChainingBit,
+			CLA:      getResponseCLA,
 			INS:      0xc0,
 			Le:       length,
 			Encoding: EncodingShort,

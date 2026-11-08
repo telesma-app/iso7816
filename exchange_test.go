@@ -87,6 +87,52 @@ func TestExchangeCollectsResponseChaining(t *testing.T) {
 	}
 }
 
+func TestExchangeUsesConfiguredGetResponseCLA(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		commandCLA     byte
+		instruction    byte
+		getResponseCLA byte
+	}{
+		{name: "secure interindustry", commandCLA: 0x04, instruction: 0xca},
+		{name: "secure proprietary", commandCLA: 0x84, instruction: 0xca},
+		{name: "explicit GET RESPONSE", commandCLA: 0x04, instruction: 0xc0},
+		{name: "nonzero override", commandCLA: 0x80, instruction: 0xca, getResponseCLA: 0x02},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			card := &fakeCard{t: t, exchanges: []exchange{
+				{
+					command:  []byte{tc.commandCLA, tc.instruction, 0x01, 0x02, 0x02, 0xaa, 0xbb, 0x00},
+					response: []byte{0x01, 0x61, 0x02},
+				},
+				{
+					command:  []byte{tc.getResponseCLA, 0xc0, 0x00, 0x00, 0x02},
+					response: []byte{0x02, 0x03, 0x61, 0x00},
+				},
+				{
+					command:  []byte{tc.getResponseCLA, 0xc0, 0x00, 0x00, 0x00},
+					response: []byte{0x04, 0x90, 0x00},
+				},
+			}}
+
+			response, err := Exchange(t.Context(), card, Command{
+				CLA: tc.commandCLA, INS: tc.instruction, P1: 0x01, P2: 0x02,
+				Data: []byte{0xaa, 0xbb}, Le: 256,
+			}, WithGetResponseCLA(tc.getResponseCLA))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if response.Status != StatusSuccess || !bytes.Equal(response.Data, []byte{1, 2, 3, 4}) {
+				t.Errorf("response = %#v, want data 01020304 and status 9000", response)
+			}
+			if len(card.exchanges) != 0 {
+				t.Errorf("%d exchanges remain", len(card.exchanges))
+			}
+		})
+	}
+}
+
 func TestExchangeSupportsConfiguredLegacyStatus(t *testing.T) {
 	card := &fakeCard{t: t, exchanges: []exchange{
 		{

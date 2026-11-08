@@ -68,6 +68,53 @@ func TestExchangeChainRetainsFragmentsAndCollectsFinalResponse(t *testing.T) {
 	}
 }
 
+func TestExchangeChainUsesConfiguredGetResponseCLA(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		cla  byte
+	}{
+		{name: "interindustry", cla: 0x04},
+		{name: "proprietary", cla: 0x84},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			card := &fakeCard{t: t, exchanges: []exchange{
+				{
+					command:  []byte{tc.cla | 0x10, 0xdb, 0x3f, 0xff, 0x02, 0xaa, 0xbb},
+					response: []byte{0x90, 0x00},
+				},
+				{
+					command:  []byte{tc.cla, 0xdb, 0x3f, 0xff, 0x01, 0xcc, 0x00},
+					response: []byte{0x01, 0x61, 0x02},
+				},
+				{
+					command:  []byte{0x00, 0xc0, 0x00, 0x00, 0x02},
+					response: []byte{0x02, 0x03, 0x61, 0x00},
+				},
+				{
+					command:  []byte{0x00, 0xc0, 0x00, 0x00, 0x00},
+					response: []byte{0x04, 0x63, 0xc2},
+				},
+			}}
+			commands := []Command{
+				{CLA: tc.cla | 0x10, INS: 0xdb, P1: 0x3f, P2: 0xff, Data: []byte{0xaa, 0xbb}, Encoding: EncodingShort},
+				{CLA: tc.cla, INS: 0xdb, P1: 0x3f, P2: 0xff, Data: []byte{0xcc}, Le: 256, Encoding: EncodingShort},
+			}
+
+			response, err := ExchangeChain(t.Context(), card, commands, WithGetResponseCLA(0))
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if response.Status != 0x63c2 || !bytes.Equal(response.Data, []byte{1, 2, 3, 4}) {
+				t.Errorf("response = %#v, want data 01020304 and status 63c2", response)
+			}
+			if len(card.exchanges) != 0 {
+				t.Errorf("%d exchanges remain", len(card.exchanges))
+			}
+		})
+	}
+}
+
 func TestExchangeChainStopsAfterRejectedFragment(t *testing.T) {
 	for _, status := range []StatusWord{0x6982, 0x6101, 0x9f01, 0x9100} {
 		t.Run(status.String(), func(t *testing.T) {
