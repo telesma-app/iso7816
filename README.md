@@ -229,7 +229,7 @@ Use [`telesma-app/pcsc`](https://github.com/telesma-app/pcsc) for PC/SC access a
 ## Development
 
 ```sh
-GOWORK=off go test ./...
+go test ./...
 ```
 
 The test suite uses in-memory cards and does not require hardware.
